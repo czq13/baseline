@@ -13,11 +13,13 @@ from gym.wrappers import FlattenDictWrapper
 from baselines import logger
 from baselines.bench import Monitor
 from baselines.common import set_global_seeds
-from baselines.common.atari_wrappers import make_atari, wrap_deepmind
+#from baselines.common.atari_wrappers import make_atari, wrap_deepmind
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 from baselines.common.vec_env.dummy_vec_env import DummyVecEnv
-from baselines.common import retro_wrappers
+#from baselines.common import retro_wrappers
 from baselines.common.wrappers import ClipActionsWrapper
+
+from baselines.TailsitterEnv.TailsitterEnv import TailsitterEnv
 
 def make_vec_env(env_id, env_type, num_env, seed,
                  wrapper_kwargs=None,
@@ -27,7 +29,7 @@ def make_vec_env(env_id, env_type, num_env, seed,
                  flatten_dict_observations=True,
                  gamestate=None,
                  initializer=None,
-                 force_dummy=False):
+                 force_dummy=True):
     """
     Create a wrapped, monitored SubprocVecEnv for Atari and MuJoCo.
     """
@@ -78,7 +80,8 @@ def make_env(env_id, env_type, mpi_rank=0, subrank=0, seed=None, reward_scale=1.
         gamestate = gamestate or retro.State.DEFAULT
         env = retro_wrappers.make_retro(game=env_id, max_episode_steps=10000, use_restricted_actions=retro.Actions.DISCRETE, state=gamestate)
     else:
-        env = gym.make(env_id, **env_kwargs)
+        #env = gym.make(env_id, **env_kwargs)
+        env = TailsitterEnv()
 
     if flatten_dict_observations and isinstance(env.observation_space, gym.spaces.Dict):
         keys = env.observation_space.spaces.keys()

@@ -18,10 +18,10 @@ def constfn(val):
         return val
     return f
 
-def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2048, ent_coef=0.0, lr=3e-4,
+def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=1024, ent_coef=0.0, lr=3e-4,
             vf_coef=0.5,  max_grad_norm=0.5, gamma=0.99, lam=0.95,
             log_interval=10, nminibatches=4, noptepochs=4, cliprange=0.2,
-            save_interval=0, load_path=None, model_fn=None, update_fn=None, init_fn=None, mpi_rank_weight=1, comm=None, **network_kwargs):
+            save_interval=100, load_path=None, model_fn=None, update_fn=None, init_fn=None, mpi_rank_weight=1, comm=None, **network_kwargs):
     '''
     Learn policy using PPO algorithm (https://arxiv.org/abs/1707.06347)
 
@@ -107,7 +107,7 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
     model = model_fn(policy=policy, ob_space=ob_space, ac_space=ac_space, nbatch_act=nenvs, nbatch_train=nbatch_train,
                     nsteps=nsteps, ent_coef=ent_coef, vf_coef=vf_coef,
                     max_grad_norm=max_grad_norm, comm=comm, mpi_rank_weight=mpi_rank_weight)
-
+    load_path = '/home/czq/baselines/log/checkpoints/02200'
     if load_path is not None:
         model.load(load_path)
     # Instantiate the runner object
@@ -126,6 +126,11 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
     tfirststart = time.perf_counter()
 
     nupdates = total_timesteps//nbatch
+    czqlogger = logger.get_current()
+    import baselines.common.tf_util as U
+    sess = U.get_session()
+    # self.czq_summary.add_graph(sess.graph)
+    czqlogger.output_formats[0].czq_summary.add_graph(sess.graph)
     for update in range(1, nupdates+1):
         assert nbatch % nminibatches == 0
         # Start timer
@@ -200,6 +205,8 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
             logger.logkv("misc/explained_variance", float(ev))
             logger.logkv('eprewmean', safemean([epinfo['r'] for epinfo in epinfobuf]))
             logger.logkv('eplenmean', safemean([epinfo['l'] for epinfo in epinfobuf]))
+            logger.logkv('czq/mean reward', safemean(returns))
+            logger.logkv('czq/actions', safemean(np.fabs(actions)))
             if eval_env is not None:
                 logger.logkv('eval_eprewmean', safemean([epinfo['r'] for epinfo in eval_epinfobuf]) )
                 logger.logkv('eval_eplenmean', safemean([epinfo['l'] for epinfo in eval_epinfobuf]) )
@@ -208,6 +215,7 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
                 logger.logkv('loss/' + lossname, lossval)
 
             logger.dumpkvs()
+
         if save_interval and (update % save_interval == 0 or update == 1) and logger.get_dir() and is_mpi_root:
             checkdir = osp.join(logger.get_dir(), 'checkpoints')
             os.makedirs(checkdir, exist_ok=True)

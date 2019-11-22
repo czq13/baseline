@@ -154,6 +154,10 @@ class TensorBoardOutputFormat(KVWriter):
         self.event_pb2 = event_pb2
         self.pywrap_tensorflow = pywrap_tensorflow
         self.writer = pywrap_tensorflow.EventsWriter(compat.as_bytes(path))
+        self.czq_summary = tf.summary.FileWriter(dir)
+        #import baselines.common.tf_util as U
+        #sess = U.get_session()
+        #self.czq_summary.add_graph(sess.graph)
 
     def writekvs(self, kvs):
         def summary_val(k, v):
@@ -162,7 +166,8 @@ class TensorBoardOutputFormat(KVWriter):
         summary = self.tf.Summary(value=[summary_val(k, v) for k, v in kvs.items()])
         event = self.event_pb2.Event(wall_time=time.time(), summary=summary)
         event.step = self.step # is there any reason why you'd want to specify the step?
-        self.writer.WriteEvent(event)
+        #self.writer.WriteEvent(event)
+        self.czq_summary.add_summary(summary, self.step)
         self.writer.Flush()
         self.step += 1
 
@@ -174,6 +179,7 @@ class TensorBoardOutputFormat(KVWriter):
 def make_output_format(format, ev_dir, log_suffix=''):
     os.makedirs(ev_dir, exist_ok=True)
     if format == 'stdout':
+        #return TensorBoardOutputFormat(osp.join(ev_dir, 'tb%s' % log_suffix))
         return HumanOutputFormat(sys.stdout)
     elif format == 'log':
         return HumanOutputFormat(osp.join(ev_dir, 'log%s.txt' % log_suffix))

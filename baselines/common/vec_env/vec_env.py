@@ -41,7 +41,7 @@ class VecEnv(ABC):
     }
 
     def __init__(self, num_envs, observation_space, action_space):
-        self.num_envs = num_envs
+        self.num_envs = 8#num_envs
         self.observation_space = observation_space
         self.action_space = action_space
 

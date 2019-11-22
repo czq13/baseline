@@ -110,7 +110,7 @@ def build_env(args):
         get_session(config=config)
 
         flatten_dict_observations = alg not in {'her'}
-        env = make_vec_env(env_id, env_type, args.num_env or 1, seed, reward_scale=args.reward_scale, flatten_dict_observations=flatten_dict_observations)
+        env = make_vec_env(env_id, env_type, args.num_env or 8, seed, reward_scale=args.reward_scale, flatten_dict_observations=flatten_dict_observations)
 
         if env_type == 'mujoco':
             env = VecNormalize(env, use_tf=True)
@@ -133,7 +133,7 @@ def get_env_type(args):
         env_type = env_id
         env_id = [g for g in _game_envs[env_type]][0]
     else:
-        env_type = None
+        env_type = 'classic_control'#None
         for g, e in _game_envs.items():
             if env_id in e:
                 env_type = g
@@ -194,7 +194,7 @@ def parse_cmdline_kwargs(args):
 
 def configure_logger(log_path, **kwargs):
     if log_path is not None:
-        logger.configure(log_path)
+        logger.configure(log_path,format_strs=['tensorboard'])
     else:
         logger.configure(**kwargs)
 
