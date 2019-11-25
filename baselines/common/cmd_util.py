@@ -9,7 +9,7 @@ except ImportError:
     MPI = None
 
 import gym
-from gym.wrappers import FlattenDictWrapper
+#from gym.wrappers import FlattenDictWrapper
 from baselines import logger
 from baselines.bench import Monitor
 from baselines.common import set_global_seeds
@@ -29,7 +29,7 @@ def make_vec_env(env_id, env_type, num_env, seed,
                  flatten_dict_observations=True,
                  gamestate=None,
                  initializer=None,
-                 force_dummy=True):
+                 force_dummy=False):
     """
     Create a wrapped, monitored SubprocVecEnv for Atari and MuJoCo.
     """

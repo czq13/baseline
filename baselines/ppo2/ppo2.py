@@ -21,7 +21,7 @@ def constfn(val):
 def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=1024, ent_coef=0.0, lr=3e-4,
             vf_coef=0.5,  max_grad_norm=0.5, gamma=0.99, lam=0.95,
             log_interval=10, nminibatches=4, noptepochs=4, cliprange=0.2,
-            save_interval=100, load_path=None, model_fn=None, update_fn=None, init_fn=None, mpi_rank_weight=1, comm=None, **network_kwargs):
+            save_interval=10, load_path=None, model_fn=None, update_fn=None, init_fn=None, mpi_rank_weight=1, comm=None, **network_kwargs):
     '''
     Learn policy using PPO algorithm (https://arxiv.org/abs/1707.06347)
 
@@ -107,7 +107,7 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=1
     model = model_fn(policy=policy, ob_space=ob_space, ac_space=ac_space, nbatch_act=nenvs, nbatch_train=nbatch_train,
                     nsteps=nsteps, ent_coef=ent_coef, vf_coef=vf_coef,
                     max_grad_norm=max_grad_norm, comm=comm, mpi_rank_weight=mpi_rank_weight)
-    load_path = '/home/czq/baselines/log/checkpoints/02200'
+    #load_path = '/home/czq/baselines/log/checkpoints/02200'
     if load_path is not None:
         model.load(load_path)
     # Instantiate the runner object
@@ -130,7 +130,7 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=1
     import baselines.common.tf_util as U
     sess = U.get_session()
     # self.czq_summary.add_graph(sess.graph)
-    czqlogger.output_formats[0].czq_summary.add_graph(sess.graph)
+    # czqlogger.output_formats[0].czq_summary.add_graph(sess.graph)
     for update in range(1, nupdates+1):
         assert nbatch % nminibatches == 0
         # Start timer

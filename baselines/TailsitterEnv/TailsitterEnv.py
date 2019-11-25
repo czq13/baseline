@@ -6,12 +6,12 @@ import numpy as np
 import os
 #os.environ['GAZEBO_PLUGIN_PATH'] = '/home/czq/chWorkspace/tailsitter_env/fw/gazebo_model'
 os.environ['GAZEBO_PLUGIN_PATH'] = '/home/czq/firmware/build/posix_sitl_default/build_gazebo'
-os.environ['GAZEBO_MODEL_PATH'] = '/home/czq/chWorkspace/tailsitter_env/fw/gazebo_model'
+os.environ['GAZEBO_MODEL_PATH'] = '/home/czq/eclipse-workspace/tailsitter_env/fw/gazebo_model'
 #os.environ['LD_LIBRARY_PATH'] = '/home/czq/chWorkspace/tailsitter_env/fw/gazebo_model'
 os.environ['LD_LIBRARY_PATH'] = '/home/czq/firmware/build/posix_sitl_default/build_gazebo'
 #import tailsitter_env as te
 import baselines.TailsitterEnv.tailsitter_env as te
-
+import random
 class TailsitterEnv(gym.Env):
     count = 0
     def __init__(self):
@@ -21,7 +21,10 @@ class TailsitterEnv(gym.Env):
         self.low_state = -1.0#np.array([-1.0, -1.0, -1.0])
         self.high_state = 1.0#np.array([1.0, 1.0, 1.0])
         self.observation_space = spaces.Box(low=self.low_state, high=self.high_state, shape=(3,) ,dtype=np.float32)
-        self.num = TailsitterEnv.count
+        self.num = random.randint(10, 100)
+        os.environ['GAZEBO_MASTER_URI'] = 'http://localhost:115' + str(self.num)
+        print(os.environ['GAZEBO_MASTER_URI'])
+        te.init()
         TailsitterEnv.count += 1
         self.seed()
 
@@ -32,7 +35,7 @@ class TailsitterEnv(gym.Env):
     def step(self, action):
         taction = [0] * 2
         taction[0], taction[1] = (action[0]+1.0) / 2.0, -1.0 * (action[1]+1.0) / 2.0 * 1.57
-        te.SetCtrl(self.num, taction[0], taction[1])
+        te.SetCtrl(taction[0], taction[1])
         obsv, reward, done = self.get_obsv()
         return obsv, reward, done, {}
 
@@ -51,7 +54,7 @@ class TailsitterEnv(gym.Env):
         return obsv
 
     def get_obsv(self):
-        tobsv = te.GetObsv(self.num)
+        tobsv = te.GetObsv()
         vx, vz, pitch, roll, pitch_speed, z = tobsv[0], tobsv[1], tobsv[2], tobsv[3], tobsv[4], tobsv[5]
         obsv = np.array([vx / 30.0, vz / 10.0, pitch / (1.57)])
         #reward = -pitch / 10.0 + (vx - 15.0) / 100.0
@@ -67,14 +70,25 @@ class TailsitterEnv(gym.Env):
             return obsv, reward, done
         #elif vz > 2.0:
         #    reward -= (vz - 2.0) / 100.0
-        elif vz < 0:
-            reward -= (math.fabs(vz))/1000
-        elif vz > 5:
+        if vz < 0:
+            reward -= (min(math.fabs(vz), 1.0))/1000
+        if vz < -1:
+            reward -= (min(math.fabs(vz+1), 1.0))/200
+        if vz < -2:
+            reward -= (min(math.fabs(vz+2), 1.0))/100
+        if vz < -3:
+            reward -= (math.fabs(vz+3)) / 50
+        if vz > 5:
             reward -= (math.fabs(vz-5)) / 10000
         if math.fabs(vx) > 18.0 and pitch < -1.57 + 5.0/57.3:
             reward, done = reward + 1.0, True
             return obsv, reward, done
 
         if math.fabs(pitch_speed) > 1.0:
-            reward -= (math.fabs(pitch_speed) - 1.0) / 400.0
+            reward -= min((math.fabs(pitch_speed) - 1.0), 1.0) / 400.0
+        if math.fabs(pitch_speed) > 2.0:
+            reward -= min((math.fabs(pitch_speed) - 2.0), 1.0) / 200.0
+        if math.fabs(pitch_speed) > 3.0:
+            reward -= min((math.fabs(pitch_speed) - 3.0), 1.0) / 100.0
+
         return obsv, reward, done
